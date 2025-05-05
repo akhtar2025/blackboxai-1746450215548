@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Work Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-center mb-8 text-gray-800">Work Planner System</h1>
+        
+        <!-- Input Form -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <form id="workForm" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="npk" class="block text-sm font-medium text-gray-700">NPK</label>
+                        <input type="text" id="npk" name="npk" required
+                            class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
+                        <input type="text" id="name" name="name" required
+                            class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
+                <div>
+                    <label for="workResults" class="block text-sm font-medium text-gray-700">Today's Work Results</label>
+                    <textarea id="workResults" name="workResults" rows="3" required
+                        class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"></textarea>
+                </div>
+                <div>
+                    <label for="workPlan" class="block text-sm font-medium text-gray-700">Today's Work Plan</label>
+                    <textarea id="workPlan" name="workPlan" rows="3" required
+                        class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"></textarea>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="submit"
+                        class="inline-flex items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+                        <i class="fas fa-save mr-2"></i> Submit
+                    </button>
+                    <button type="button" id="exportBtn"
+                        class="inline-flex items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200">
+                        <i class="fas fa-file-excel mr-2"></i> Export to Excel
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Data Table -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="px-4 py-5 sm:px-6 flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Work Records</h3>
+                <div>
+                    <input type="text" id="nameFilter" placeholder="Search by name..."
+                        class="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        aria-label="Search by name">
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">NPK</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Work Results</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Work Plan</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recordsTable" class="bg-white divide-y divide-gray-200">
+                        <!-- Data will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        .loading {
+            position: relative;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+        .loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 1.5em;
+            height: 1.5em;
+            margin-top: -0.75em;
+            margin-left: -0.75em;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            loadRecords();
+
+            const nameFilterInput = document.getElementById('nameFilter');
+            let debounceTimeout = null;
+
+            nameFilterInput.addEventListener('input', () => {
+                clearTimeout(debounceTimeout);
+                debounceTimeout = setTimeout(() => {
+                    loadRecords(nameFilterInput.value.trim());
+                }, 300);
+            });
+        });
+
+        document.getElementById('workForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            submitBtn.classList.add('loading');
+            
+            const formData = {
+                npk: document.getElementById('npk').value,
+                name: document.getElementById('name').value,
+                work_results: document.getElementById('workResults').value,
+                work_plan: document.getElementById('workPlan').value
+            };
+
+            try {
+                const response = await fetch('/api/records', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: 'Record has been saved successfully.',
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+                    document.getElementById('workForm').reset();
+                    loadRecords();
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: error.message || 'Failed to save record.'
+                });
+            } finally {
+                submitBtn.classList.remove('loading');
+            }
+        });
+
+        document.getElementById('exportBtn').addEventListener('click', async () => {
+            const exportBtn = document.getElementById('exportBtn');
+            exportBtn.classList.add('loading');
+            
+            try {
+                window.location.href = '/api/export';
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: 'Export started successfully.',
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+            } catch (error) {
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: 'Failed to export data.'
+                });
+            } finally {
+                setTimeout(() => exportBtn.classList.remove('loading'), 1000);
+            }
+        });
+
+        async function loadRecords(nameFilter = '') {
+            const tbody = document.getElementById('recordsTable');
+            tbody.style.opacity = '0.5';
+            
+            try {
+                const url = nameFilter ? `/api/records?name=${encodeURIComponent(nameFilter)}` : '/api/records';
+                const response = await fetch(url);
+                const records = await response.json();
+                tbody.innerHTML = records.map((record, index) => `
+                    <tr class="hover:bg-gray-50 transition-colors duration-150 fade-in" style="animation-delay: ${index * 50}ms">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${record.npk}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${record.name}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600 max-w-md break-words">${record.work_results}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600 max-w-md break-words">${record.work_plan}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            ${new Date(record.created_at).toLocaleString()}
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Failed to load records:', error);
+            } finally {
+                tbody.style.opacity = '1';
+            }
+        }
+    </script>
+</body>
+</html>
