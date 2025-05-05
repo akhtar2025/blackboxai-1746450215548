@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS work_records (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    npk TEXT NOT NULL,
+    name TEXT NOT NULL,
+    work_results TEXT NOT NULL,
+    work_plan TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
